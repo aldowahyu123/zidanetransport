@@ -100,7 +100,7 @@ class BookingController extends Controller
         
             \Log::info('Booking created', ['booking_id' => $booking->booking_id]);
         
-            $orderId = 'ORDER-' . $booking->booking_id;
+            $orderId = 'ORDER-' . $booking->booking_id . '-' . uniqid();
         
             // 🔁 MIDTRANS CONFIG & GENERATE SNAP TOKEN SEBELUM SIMPAN PAYMENT
             \Midtrans\Config::$serverKey = env('MIDTRANS_SERVER_KEY');
@@ -120,7 +120,7 @@ class BookingController extends Controller
                 'item_details' => [
                     [
                         'id' => $vehicle->id,
-                        'price' => $vehicle->base_price,
+                        'price' => $vehicle->base_price * $priceMultiplier,
                         'quantity' => 1,
                         'name' => $vehicle->name,
                     ],

@@ -31,16 +31,16 @@ class BookingResource extends Resource
             // Relasi ke tabel `services`
             Select::make('service_id')
                 ->relationship('service', 'service_name') // Sesuaikan dengan kolom yang benar
-                ->label('Service')
+                ->label('Tujuan')
                 ->required(),
 
             DatePicker::make('booking_date')
-                ->label('Booking Date')
+                ->label('Tanggal Booking')
                 ->required(),
 
             Select::make('vehicle_id')
                 ->relationship('vehicle', 'name') // Relasi ke `vehicles`
-                ->label('Vehicle')
+                ->label('Kendaraan')
                 ->required(),
 
             Select::make('status')
@@ -62,23 +62,23 @@ class BookingResource extends Resource
     {
         return $table->columns([
             TextColumn::make('user.username')->label('Customer'), // Relasi ke `users`
-            TextColumn::make('service.service_name')->label('Service'), // Kolom yang benar di `services`
+            TextColumn::make('service.service_name')->label('Tujuan'), // Kolom yang benar di `services`
             TextColumn::make('booking_date')
-                ->label('Booking Date')
+                ->label('Tanggal Booking')
                 ->date(),
             TextColumn::make('pickup_date')
-                ->label('Pickup Date')
+                ->label('Tanggal Penjemputan')
                 ->date(),
 
             TextColumn::make('end_date')
-                ->label('End Date')
+                ->label('Tanggal Selesai')
                 ->date(),
 
             TextColumn::make('vehicle.name')
-                ->label('Vehicle'),
+                ->label('Kendaraan'),
 
             TextColumn::make('status')
-                ->label('Status')
+                ->label('Status Pembayaran')
                 ->sortable()
                 ->searchable(),
         ])

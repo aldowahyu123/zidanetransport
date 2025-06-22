@@ -13,18 +13,20 @@
         <div class="col-md-6">
             <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Informasi Booking</h5>
+                    <h5 class="mb-0">Informasi Pemesan</h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>Nama:</strong> {{ $name ?? '-' }}</p>
-                    <p><strong>Alamat:</strong> {{ $address ?? '-' }}</p>
-                    <p><strong>No. HP:</strong> {{ $phone ?? '-' }}</p>
-                    <p><strong>Tujuan:</strong> {{ $booking->service->service_name }}</p>
-                    <p><strong>Detail Tujuan:</strong> {{ $destinationDetail ?? '-' }}</p>
-                    <p><strong>Kendaraan:</strong> {{ $booking->vehicle->name }}</p>
-                    <p><strong>Tanggal Penjemputan:</strong> {{ $booking->pickup_date ?? '-' }}</p>
-                    <p><strong>Tanggal Selesai:</strong> {{ $booking->end_date ?? '-' }}</p>
-                    <p><strong>Waktu Penjemputan:</strong> {{ $booking->pickup_time ?? '-' }}</p>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Nama:</strong> {{ $name ?? '-' }}</li>
+                        <li class="list-group-item"><strong>Alamat:</strong> {{ $address ?? '-' }}</li>
+                        <li class="list-group-item"><strong>No. HP:</strong> {{ $phone ?? '-' }}</li>
+                        <li class="list-group-item"><strong>Tujuan:</strong> {{ $booking->service->service_name ?? '-' }}</li>
+                        <li class="list-group-item"><strong>Detail Tujuan:</strong> {{ $destinationDetail ?? '-' }}</li>
+                        <li class="list-group-item"><strong>Kendaraan:</strong> {{ $booking->vehicle->name ?? '-' }}</li>
+                        <li class="list-group-item"><strong>Tanggal Penjemputan:</strong> {{ \Carbon\Carbon::parse($booking->pickup_date)->translatedFormat('d F Y') }}</li>
+                        <li class="list-group-item"><strong>Tanggal Selesai:</strong> {{ \Carbon\Carbon::parse($booking->end_date)->translatedFormat('d F Y') }}</li>
+                        <li class="list-group-item"><strong>Jam Penjemputan:</strong> {{ $booking->pickup_time }}</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -37,13 +39,34 @@
                 </div>
                 <div class="card-body">
                     <p><strong>Order ID:</strong> {{ $payment->order_id }}</p>
-                    <p><strong>Total:</strong> Rp{{ number_format($payment->amount, 0, ',', '.') }}</p>
-                    <p><strong>Status Pembayaran:</strong> {{ $payment->payment_status }}</p>
+                    <p><strong>Total Pembayaran:</strong> <span class="text-success fw-bold">Rp{{ number_format($payment->amount, 0, ',', '.') }}</span></p>
+                    <p>
+                        <strong>Status Pembayaran:</strong>
+                        @php
+                            $status = $payment->payment_status;
+                            $badge = match($status) {
+                                'pending' => 'warning',
+                                'paid', 'settlement' => 'success',
+                                'cancelled', 'expire', 'deny' => 'danger',
+                                default => 'secondary'
+                            };
+                        @endphp
+                        <span class="badge bg-{{ $badge }} text-uppercase">{{ $status }}</span>
+                    </p>
 
-                    @if ($payment->payment_status === 'pending' && $snapToken)
-                        <button id="pay-button" class="btn btn-primary mt-3">Bayar Sekarang</button>
-                    @elseif ($payment->payment_status === 'paid')
-                        <div class="alert alert-success mt-3">Pembayaran berhasil!</div>
+                    @if ($status === 'pending' && $snapToken)
+                        <div class="mt-3">
+                            <p class="text-muted small">Klik tombol di bawah untuk melanjutkan pembayaran melalui Midtrans:</p>
+                            <button id="pay-button" class="btn btn-outline-primary w-100">Bayar Sekarang</button>
+                        </div>
+                    @elseif ($status === 'paid' || $status === 'settlement')
+                        <div class="alert alert-success mt-3 text-center">
+                            <i class="bi bi-check-circle-fill"></i> Pembayaran berhasil!
+                        </div>
+                    @elseif ($status === 'cancelled' || $status === 'expire')
+                        <div class="alert alert-danger mt-3 text-center">
+                            <i class="bi bi-x-circle-fill"></i> Pembayaran gagal atau dibatalkan.
+                        </div>
                     @endif
                 </div>
             </div>
@@ -51,8 +74,10 @@
     </div>
 
     <!-- Button Lihat Riwayat -->
-    <div class="text-center">
-        <a href="{{ route('history') }}" class="btn btn-secondary mt-4">Lihat Riwayat Pemesanan</a>
+    <div class="text-center mt-4">
+        <a href="{{ route('history') }}" class="btn btn-secondary">
+            <i class="bi bi-clock-history me-1"></i> Lihat Riwayat Pemesanan
+        </a>
     </div>
 </div>
 @endsection
@@ -71,7 +96,7 @@
                     alert("Pembayaran sedang diproses.");
                 },
                 onError: function(result){
-                    alert("Pembayaran gagal.");
+                    alert("Terjadi kesalahan saat pembayaran.");
                 }
             });
         });

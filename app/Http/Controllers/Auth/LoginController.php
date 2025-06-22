@@ -11,9 +11,6 @@ class LoginController extends Controller
 {
     /**
      * Handle user login.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
      */
     public function login(Request $request)
     {
@@ -30,6 +27,7 @@ class LoginController extends Controller
             Log::info('User logged in successfully: ' . Auth::user()->email);
             $request->session()->regenerate();
 
+            // Langsung redirect ke route bernama 'redirect'
             return redirect()->route('redirect');
         }
 
@@ -38,4 +36,6 @@ class LoginController extends Controller
             'email' => 'The provided credentials do not match our records.',
         ]);
     }
+
+    // Hapus method authenticated(), tidak dibutuhkan
 }

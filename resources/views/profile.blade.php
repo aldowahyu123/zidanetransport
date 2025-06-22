@@ -23,7 +23,7 @@
         <!-- Menu Profil -->
         <div class="bg-indigo-900 rounded-2xl px-8 py-6 shadow-lg text-left">
             <ul class="space-y-5 text-base font-medium text-white">
-                <li class="border-b border-orange-400 pb-2 hover:text-orange-300 transition duration-150"><a href="#">Riwayat Pesanan</a></li>
+                <li class="border-b border-orange-400 pb-2 hover:text-orange-300 transition duration-150"><a href="/history">Riwayat Pesanan</a></li>
                 <li class="border-b border-orange-400 pb-2 hover:text-orange-300 transition duration-150"><a href="#">Help and Support</a></li>
                 <li class="border-b border-orange-400 pb-2 hover:text-orange-300 transition duration-150"><a href="#">Settings</a></li>
                 <li class="border-b border-orange-400 pb-2 hover:text-orange-300 transition duration-150">

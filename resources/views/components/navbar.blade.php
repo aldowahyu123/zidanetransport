@@ -39,21 +39,27 @@
                 class="flex flex-col p-4 md:p-0 mt-4 font-medium border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white">
                 <li>
                     <a href="/beranda"
-                        class="block py-2 px-3 text-white bg-blue-700 rounded-sm md:bg-transparent md:text-blue-700 md:p-0"
-                        aria-current="page">Beranda</a>
+                        class="block py-2 px-3 rounded-sm md:p-0
+                            {{ request()->is('beranda') ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700' : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700' }}">
+                        Beranda</a>
                 </li>
                 <li>
                     <a href="/layanan"
-                        class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
-                        aria-current="page">Layanan</a>
+                        class="block py-2 px-3 rounded-sm md:p-0
+                            {{ request()->is('layanan') ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700' : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700' }}">
+                        Layanan</a>
                 </li>
                 <li>
                     <a href="/pesanan"
-                        class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Pesanan</a>
+                        class="block py-2 px-3 rounded-sm md:p-0
+                            {{ request()->is('pesanan') ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700' : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700' }}">
+                        Pesanan</a>
                 </li>
                 <li>
                     <a href="{{ route('profile') }}"
-                        class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Profil</a>
+                        class="block py-2 px-3 rounded-sm md:p-0
+                            {{ request()->is('profile') ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700' : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700' }}">
+                        Profil</a>
                 </li>
             </ul>
         </div>

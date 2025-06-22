@@ -12,10 +12,11 @@ return new class extends Migration
     public function up()
     {
         Schema::table('bookings', function (Blueprint $table) {
-            // Hanya tambahkan foreign key saja jika kolom sudah ada
+            $table->unsignedBigInteger('vehicle_id'); // tambahkan kolom dulu
             $table->foreign('vehicle_id')->references('id')->on('vehicles')->onDelete('cascade');
         });
     }
+
     
     public function down()
     {

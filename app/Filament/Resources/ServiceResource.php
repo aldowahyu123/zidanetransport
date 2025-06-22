@@ -20,18 +20,22 @@ class ServiceResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            TextInput::make('service_name')->required()->label('Service Name'),
+            TextInput::make('service_name')->required()->label('Tujuan'),
             Textarea::make('description')->label('Description'),
-            TextInput::make('price')->numeric()->required(),
+            TextInput::make('price_multiplier')
+                ->numeric()
+                ->step(0.01)
+                ->required()
+                ->label('Price Multiplier'),
         ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('service_name')->label('Service Name')->sortable()->searchable(),
+            TextColumn::make('service_name')->label('Tujuan')->sortable()->searchable(),
             TextColumn::make('description')->label('Description')->wrap(),
-            TextColumn::make('price')->label('Price')->sortable(),
+            TextColumn::make('price_multiplier')->label('Price Multiplier')->sortable(),
         ]);
     }
 

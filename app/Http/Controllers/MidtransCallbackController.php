@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Booking;
 use App\Models\Payment;
 
@@ -12,106 +12,91 @@ class MidtransCallbackController extends Controller
 {
     public function handleCallback(Request $request)
     {
-        Log::info('Midtrans Callback Request Received', $request->all());
 
-        // Decode JSON payload
-        $notification = json_decode($request->getContent(), true);
+        Log::info('🔥 [Midtrans] Callback reached', $request->all());
 
-        if (!$notification) {
-            Log::error('Invalid JSON data received.');
-            return response()->json(['message' => 'Invalid JSON data'], 400);
+        $n = $request->all();                        // notifikasi asli sebagai array
+
+        /* ------------------------------------------------------------------
+         | 1. Validasi JSON & field wajib
+         * -----------------------------------------------------------------*/
+        foreach (['order_id', 'status_code', 'gross_amount', 'signature_key'] as $key) {
+            if (! isset($n[$key])) {
+                Log::error("[Midtrans] Incomplete data: missing {$key}");
+                return response()->json(['message' => 'Incomplete data'], 400);
+            }
         }
 
-        // Validate required fields
-        if (!isset($notification['order_id'], $notification['status_code'], $notification['gross_amount'], $notification['signature_key'])) {
-            Log::error('Incomplete notification data.', $notification);
-            return response()->json(['message' => 'Incomplete notification data'], 400);
-        }
+        /* ------------------------------------------------------------------
+         | 2. Verifikasi Signature
+         * -----------------------------------------------------------------*/
+        $serverKey   = config('midtrans.server_key');
+        $mySignature = hash('sha512',
+            $n['order_id'] .
+            $n['status_code'] .
+            // pastikan gross_amount selalu '12345.00', dua desimal
+            number_format((float) $n['gross_amount'], 2, '.', '') .
+            $serverKey
+        );
 
-        Log::info('Notification received:', $notification);
-
-        $serverKey = config('midtrans.server_key');
-        $isProduction = config('midtrans.is_production');
-
-        Log::info('Server Key from config: ' . $serverKey);
-        Log::info('Environment is production: ' . ($isProduction ? 'Yes' : 'No'));
-
-        // Data for signature key calculation
-        $orderId = $notification['order_id'];
-        $statusCode = $notification['status_code'];
-        $grossAmount = $notification['gross_amount'];
-        $receivedSignatureKey = $notification['signature_key'];
-
-        // Calculate the expected signature key
-        $calculatedSignatureKey = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
-
-        // Validate signature key
-        if ($calculatedSignatureKey !== $receivedSignatureKey) {
-            Log::error('Invalid signature key.', [
-                'expected_key' => $calculatedSignatureKey,
-                'received_key' => $receivedSignatureKey,
+        if ($mySignature !== $n['signature_key']) {
+            Log::error('[Midtrans] Signature mismatch', [
+                'expected' => $mySignature,
+                'received' => $n['signature_key'],
             ]);
-            return response()->json(['message' => 'Invalid signature key'], 403);
+            return response()->json(['message' => 'Invalid signature'], 403);
         }
 
-        Log::info('Valid signature key.');
+        /* ------------------------------------------------------------------
+         | 3. Temukan booking
+         * -----------------------------------------------------------------*/
+        $orderId = $n['order_id'];
 
-        // Extract booking ID from order ID
-        if (!preg_match('/^ORDER-\d+$/', $orderId)) {
-            Log::error('Invalid order ID format.', ['order_id' => $orderId]);
-            return response()->json(['message' => 'Invalid order ID format'], 400);
+        // → Jika order‑id DIKELUARKAN aplikasi: "ORDER-87-65ee...", cari id‑nya
+        $bookingId = null;
+        if (str_starts_with($orderId, 'ORDER-')) {
+            // ambil segmen kedua (index 1)
+            $bookingId = explode('-', $orderId, 3)[1] ?? null;
         }
 
-        $bookingCode = explode('-', $orderId)[1] ?? null;
-        $booking = Booking::where('booking_id', $bookingCode)->first();
+        $payment = Payment::where('order_id', $orderId)->first();
 
+        if (!$payment) {
+            Log::warning("⚠️ Payment not found: $orderId");
+            return response()->json(['message'=>'Payment not found'],200);
+        }
+
+        $booking = $payment->booking;
         if (!$booking) {
-            Log::error('Booking not found for code.', ['booking_code' => $bookingCode]);
-            return response()->json(['message' => 'Booking not found'], 404);
+            Log::warning("⚠️ Booking missing for payment ".$payment->id);
+            return response()->json(['message'=>'Booking not found'],200);
         }
 
-        // Handle transaction status
-        $transactionStatus = $notification['transaction_status'];
-        $paymentType = $notification['payment_type'];
+        $txStatus   = $n['transaction_status'];
+        $paymentTag = [
+            'capture'    => 'paid',
+            'settlement' => 'paid',
+            'pending'    => 'pending',
+            'challenge'  => 'pending',
+            'deny'       => 'cancelled',
+            'cancel'     => 'cancelled',
+            'expire'     => 'cancelled',
+        ][$txStatus] ?? $booking->status;
 
-        try {
-            DB::transaction(function () use ($booking, $transactionStatus, $paymentType) {
-                // Update booking status
-                switch ($transactionStatus) {
-                    case 'capture':
-                    case 'settlement':
-                        $booking->update(['status' => 'paid']);
-                        break;
-                    case 'pending':
-                        $booking->update(['status' => 'pending']);
-                        break;
-                    case 'deny':
-                    case 'cancel':
-                    case 'expire':
-                        $booking->update(['status' => 'cancelled']);
-                        break;
-                    case 'challenge':
-                        $booking->update(['status' => 'pending']);
-                        break;
-                }
+        DB::transaction(function () use ($booking, $payment, $paymentTag, $txStatus, $n) {
+            $booking->update(['status' => $paymentTag]);
 
-                // Update or create payment information
-                $payment = Payment::firstOrNew(['booking_id' => $booking->booking_id]);
-                $payment->fill([
-                    'payment_status' => $transactionStatus,
-                    'payment_method' => $paymentType,
-                ])->save();
-            });
-
-            Log::info('Callback processed successfully for order ID.', ['order_id' => $orderId]);
-
-            return response()->json(['message' => 'Callback processed successfully'], 200);
-        } catch (\Throwable $e) {
-            Log::error('Error processing transaction.', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            $payment->update([
+                'status'         => $paymentTag,
+                'payment_status' => $txStatus,
+                'payment_method' => $n['payment_type'] ?? null,
             ]);
-            return response()->json(['message' => 'Failed to process transaction'], 500);
-        }
-    }
-}
+        });
+
+        Log::info('✅ Callback processed', [
+            'booking_id' => $booking->booking_id,
+            'status'     => $paymentTag,
+        ]);
+        return response()->json(['message'=>'OK']);
+
+}}

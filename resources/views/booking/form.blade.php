@@ -1,16 +1,18 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex justify-center mt-10">
-    <div class="w-full max-w-xl bg-indigo-900 text-white p-8 rounded-2xl shadow-lg">
-        <h2 class="text-2xl font-bold mb-6 text-center">Form Booking Carter ELF / Mobil</h2>
+<div class="min-h-screen bg-gradient-to-br from-orange-100 to-indigo-200 flex items-center justify-center py-12 px-4">
+    <div class="w-full max-w-2xl bg-indigo-900 text-white rounded-2xl shadow-2xl p-8">
+        <h2 class="text-3xl font-bold text-center mb-6 text-orange-400">Form Booking Carter ELF / Mobil</h2>
 
+        {{-- Notifikasi Sukses --}}
         @if (session('success'))
             <div class="bg-green-500 text-white px-4 py-2 rounded mb-4">
                 {{ session('success') }}
             </div>
         @endif
 
+        {{-- Error Validation --}}
         @if ($errors->any())
             <div class="bg-red-500 text-white px-4 py-2 rounded mb-4">
                 <strong>Terjadi kesalahan:</strong>
@@ -22,7 +24,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('booking.store') }}" class="space-y-4">
+        <form method="POST" action="{{ route('booking.store') }}" class="space-y-5">
             @csrf
 
             <div>
@@ -54,17 +56,19 @@
 
             <div>
                 <label for="destination_detail" class="block font-semibold mb-1">Detail Tujuan</label>
-                <textarea name="destination_detail" id="destination_detail" rows="3" class="w-full rounded-lg bg-orange-500 text-white px-4 py-2 placeholder-white placeholder-opacity-70 focus:outline-none" placeholder="Pilih Kota">{{ old('destination_detail') }}</textarea>
+                <textarea name="destination_detail" id="destination_detail" rows="2" class="w-full rounded-lg bg-orange-500 text-white px-4 py-2 placeholder-white placeholder-opacity-70 focus:outline-none" placeholder="Detail Tujuan">{{ old('destination_detail') }}</textarea>
             </div>
 
-            <div>
-                <label for="pickup_date" class="block font-semibold mb-1">Tanggal Penjemputan</label>
-                <input type="date" name="pickup_date" id="pickup_date" class="w-full rounded-lg bg-orange-500 text-white px-4 py-2 focus:outline-none" value="{{ old('pickup_date') }}" required>
-            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="pickup_date" class="block font-semibold mb-1">Tanggal Penjemputan</label>
+                    <input type="date" name="pickup_date" id="pickup_date" class="w-full rounded-lg bg-orange-500 text-white px-4 py-2 focus:outline-none" value="{{ old('pickup_date') }}" required>
+                </div>
 
-            <div>
-                <label for="end_date" class="block font-semibold mb-1">Tanggal Selesai</label>
-                <input type="date" name="end_date" id="end_date" class="w-full rounded-lg bg-orange-500 text-white px-4 py-2 focus:outline-none" value="{{ old('end_date') }}" required>
+                <div>
+                    <label for="end_date" class="block font-semibold mb-1">Tanggal Selesai</label>
+                    <input type="date" name="end_date" id="end_date" class="w-full rounded-lg bg-orange-500 text-white px-4 py-2 focus:outline-none" value="{{ old('end_date') }}" required>
+                </div>
             </div>
 
             <div>
@@ -76,39 +80,11 @@
                 <label for="vehicle_id" class="block font-semibold mb-1">Pilih Kendaraan</label>
                 <select name="vehicle_id" id="vehicle_id" class="w-full rounded-lg bg-orange-500 text-white px-4 py-2 focus:outline-none" required>
                     <option value="">-- Pilih --</option>
-                    {{-- Diisi oleh AJAX --}}
                 </select>
             </div>
 
-  {{-- 
-          <div>
-                <label for="package_id" class="block font-semibold mb-1">Pilih Paket</label>
-                <select name="package_id" id="package_id" class="w-full rounded-lg bg-orange-500 text-white px-4 py-2 focus:outline-none" required>
-                    <option value="">-- Pilih Paket --</option>
-                    @foreach ($packages as $package)
-                        <option value="{{ $package->id }}" {{ old('package_id') == $package->id ? 'selected' : '' }}>
-                            {{ $package->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <label class="block font-semibold mb-1">Pembayaran</label>
-                <div class="flex gap-4">
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="payment_status" value="lunas" class="form-radio text-orange-500" {{ old('payment_status') == 'lunas' ? 'checked' : '' }}>
-                        <span class="ml-2">Lunas</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="payment_status" value="dp" class="form-radio text-orange-500" {{ old('payment_status') == 'dp' ? 'checked' : '' }}>
-                        <span class="ml-2">DP</span>
-                    </label>
-                </div>
-            </div>--}}
-
-            <div>
-                <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg">
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
                     Pesan Sekarang
                 </button>
             </div>

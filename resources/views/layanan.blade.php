@@ -113,7 +113,7 @@
                     </span>
                     <span>|</span>
                     <span class="flex items-center">
-                        <i class="fa-solid fa-id-card text-orange-500 mr-2"></i>DK 1402 AAK
+                        <i class="fa-solid fa-id-card text-orange-500 mr-2"></i>W 1150 HI
                     </span>
                     <span>|</span>
                     <span class="flex items-center">
@@ -140,7 +140,7 @@
 
             <!-- Armada 3 -->
             <div class="bg-indigo-900 rounded-xl shadow-md p-6 flex flex-col items-center">
-                <img src="{{ asset('img/xenia.png') }}" alt="Toyota Avanza 2015" class="w-full h-48 object-contain mb-4">
+                <img src="{{ asset('img/elf_short.png') }}" alt="Toyota Avanza 2015" class="w-full h-48 object-contain mb-4">
                 <h3 class="text-xl font-bold text-white mb-4">IZUZU ELF</h3>
                 <div class="flex items-center text-sm text-white space-x-4">
                     <span class="flex items-center">
@@ -152,7 +152,7 @@
                     </span>
                     <span>|</span>
                     <span class="flex items-center">
-                        <i class="fa-solid fa-users text-orange-500 mr-2"></i>7
+                        <i class="fa-solid fa-users text-orange-500 mr-2"></i>16
                     </span>
                 </div>
             </div>

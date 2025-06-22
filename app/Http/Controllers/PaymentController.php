@@ -19,52 +19,59 @@ class PaymentController extends Controller
     {
         $booking = Booking::where('booking_id', $bookingId)->firstOrFail();
         $payment = Payment::where('booking_id', $bookingId)->first();
-    
+
         if (!$payment || !$payment->amount || $payment->amount <= 0) {
             return redirect()->back()->with('error', 'Jumlah pembayaran tidak valid.');
         }
-    
-        Config::$serverKey = env('MIDTRANS_SERVER_KEY');
-        Config::$isProduction = false;
-        Config::$isSanitized = true;
-        Config::$is3ds = true;
-    
-        $orderId = 'ORDER-' . $booking->booking_id;
-    
-        if ($payment->order_id !== $orderId) {
-            $payment->order_id = $orderId;
-            $payment->save();
-        }
-    
+
+        \Midtrans\Config::$serverKey = env('MIDTRANS_SERVER_KEY');
+        \Midtrans\Config::$isProduction = false;
+        \Midtrans\Config::$isSanitized = true;
+        \Midtrans\Config::$is3ds = true;
+
+        // 🆕 Buat order_id unik + simpan ke DB
+        $orderId = 'ORDER-' . $booking->booking_id . '-' . uniqid();
+        $payment->update(['order_id' => $orderId]);   // simpan order_id
+        $booking->update(['order_id' => $orderId]);   // jika booking juga simpan
+
+        $callbackUrl = route('midtrans.callback');
+
+        Log::info('Override callback URL:', [$callbackUrl]);
+
         $params = [
             'transaction_details' => [
-                'order_id' => $orderId,
-                'gross_amount' => (int)$payment->amount,
+                'order_id'     => $orderId,
+                'gross_amount' => number_format($payment->amount, 2, '.', ''),
             ],
             'customer_details' => [
                 'first_name' => $booking->customer_name ?? 'Customer',
-                'email' => $booking->customer_email ?? 'customer@example.com',
+                'email'      => $booking->customer_email ?? 'customer@example.com',
             ],
-            'item_details' => [
-                [
-                    'id' => 1,
-                    'price' => (int)$payment->amount,
-                    'quantity' => 1,
-                    'name' => 'Booking ' . $booking->booking_id,
-                ],
-            ],
+            'item_details' => [[
+                'id'       => $booking->booking_id,
+                'price'    => (int) $payment->amount,
+                'quantity' => 1,
+                'name'     => 'Booking ' . $booking->booking_id,
+            ]],
+            // pakai variabel yang baru
+            'override_notification_url' => [
+                $callbackUrl
+            ]
         ];
-    
+
         try {
-            $snapToken = Snap::getSnapToken($params);
+            $snapToken = \Midtrans\Snap::getSnapToken($params);
         } catch (\Exception $e) {
-            Log::error('Midtrans Snap Error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat membuat pembayaran: ' . $e->getMessage());
+            \Log::error('Midtrans Snap Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal membuat pembayaran.');
         }
-    
-        $totalPrice = (int)$payment->amount;
+
+        $totalPrice = $payment->amount;
+
         return view('booking.payment', compact('snapToken', 'totalPrice'));
     }
+
+
     
 
     /**
@@ -72,18 +79,19 @@ class PaymentController extends Controller
      */
     public function midtransNotification(Request $request)
     {
-        Config::$serverKey = env('MIDTRANS_SERVER_KEY');
-        Config::$isProduction = false;
-        Config::$isSanitized = true;
-        Config::$is3ds = true;
+        \Midtrans\Config::$serverKey = env('MIDTRANS_SERVER_KEY');
+        \Midtrans\Config::$isProduction = false;
+        \Midtrans\Config::$isSanitized = true;
+        \Midtrans\Config::$is3ds = true;
 
         $notification = new Notification();
 
-        $orderId = $notification->order_id;
+        $orderId           = $notification->order_id;
         $transactionStatus = $notification->transaction_status;
-        $fraudStatus = $notification->fraud_status;
+        $fraudStatus       = $notification->fraud_status;
+        $paymentType       = $notification->payment_type ?? null;
 
-        Log::info('Midtrans Webhook:', [
+        Log::info('📥 Midtrans Webhook Received', [
             'order_id' => $orderId,
             'transaction_status' => $transactionStatus,
             'fraud_status' => $fraudStatus,
@@ -91,17 +99,28 @@ class PaymentController extends Controller
 
         $payment = Payment::where('order_id', $orderId)->first();
 
-        if ($payment) {
-            if ($transactionStatus === 'settlement' || ($transactionStatus === 'capture' && $fraudStatus === 'accept')) {
-                $payment->status = 'paid';
-            } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
-                $payment->status = 'failed';
-            } else {
-                $payment->status = $transactionStatus;
-            }
-            $payment->save();
+        if (!$payment) {
+            Log::warning('⚠️ Payment with order_id not found: ' . $orderId);
+            return response()->json(['message' => 'Payment not found'], 200); // tetap 200 agar tidak diulang-ulang
         }
+
+        // Ubah status tergantung status transaksi
+        $status = match ($transactionStatus) {
+            'settlement', 'capture' => 'paid',
+            'pending', 'challenge' => 'pending',
+            'cancel', 'deny', 'expire' => 'failed',
+            default => $payment->status,
+        };
+
+        $payment->update([
+            'status' => $status,
+            'payment_status' => $transactionStatus,
+            'payment_method' => $paymentType,
+        ]);
+
+        Log::info('✅ Payment updated: ' . $orderId . ' to status ' . $status);
 
         return response()->json(['message' => 'OK']);
     }
+
 }

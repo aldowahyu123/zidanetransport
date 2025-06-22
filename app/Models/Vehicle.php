@@ -9,7 +9,7 @@ class Vehicle extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'type', 'status'];
+    protected $fillable = ['name', 'type', 'status', 'base_price'];
 
     public function services()
     {

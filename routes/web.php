@@ -25,6 +25,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 });
 
+// Callback Midtrans
+Route::post('/payment/midtrans-callback', [MidtransCallbackController::class, 'handleCallback'])->name('midtrans.callback');
+
+
 // Halaman yang membutuhkan autentikasi
 Route::middleware('auth')->group(function () {
     // Redirect role
@@ -74,5 +78,3 @@ Route::middleware('auth')->group(function () {
 Route::get('/vehicles/availability', [BookingController::class, 'vehiclesWithAvailability'])
     ->name('vehicles.availability');
 
-// Callback Midtrans
-Route::post('/payment/midtrans-callback', [MidtransCallbackController::class, 'handleCallback']);
